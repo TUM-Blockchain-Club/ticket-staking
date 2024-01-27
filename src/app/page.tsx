@@ -183,9 +183,9 @@ export default function Home() {
                           </Button>
 
                           <Button onClick={openAccountModal} type="button">
-                            {account.displayName} ({account.displayBalance
+                            {account.displayName} {account.displayBalance
                             ? ` (${account.displayBalance})`
-                            : "No Balance"})
+                            : ""}
                           </Button>
                         </Flex>
                       )
@@ -227,12 +227,19 @@ export default function Home() {
                       } : {}}
                     >
                       <Flex gap={2}>
+                        {(() => {
+                          if (connected && !isLoading && isSuccess) {
+                            return <>✅</>
+                          }
+                          return <></>
+                        })()}
                         <Heading as={"h3"} size={"md"}>
                           Step 3. Stake
                         </Heading>
                       </Flex>
-                      {!isLoading && isSuccess && <Text>Successfully staked</Text>}
-                      {!isLoading && isError && <Text>Failed to stake with message {error?.message}</Text>}
+                      {isLoading && <Text size={"md"} color={"orange"}>Check your wallet for confirmation</Text>}
+                      {!isLoading && isSuccess && <Text size={"md"} color={"green"}>Successfully staked</Text>}
+                      {!isLoading && isError && <Text size={"md"} color={"red"}>Failed to stake with message {error?.message}</Text>}
                       {!dataIsLoading && !dataError && <Button
                         disabled={isLoading && isSuccess}
                         onClick={(event) => {
