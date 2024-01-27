@@ -13,7 +13,7 @@ contract StakingTest is Test {
     fallback () external payable {}
 
     function setUp() public {
-        staking = new Staking(STAKING_AMOUNT);
+        staking = new Staking(STAKING_AMOUNT, address(this));
     }
 
     // Stake

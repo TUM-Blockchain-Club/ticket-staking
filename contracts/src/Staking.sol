@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IStaking.sol";
 
 contract Staking is IStaking, Ownable {
-    constructor(uint256 _stakingAmount) Ownable(msg.sender) {
+    constructor(uint256 _stakingAmount, address _owner) Ownable(_owner) {
         STAKING_AMOUNT = _stakingAmount;
     }
 
