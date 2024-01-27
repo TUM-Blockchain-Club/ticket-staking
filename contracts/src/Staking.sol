@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import {console} from "forge-std/Test.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IStaking.sol";
 
@@ -31,6 +32,8 @@ contract Staking is IStaking, Ownable {
             if (hasStaked[refundAddress]) {
                 hasStaked[refundAddress] = false;
                 refundAddress.transfer(STAKING_AMOUNT);
+            } else {
+                revert("Staking: refund-address must have staked");
             }
         }
         emit StakesRefunded(_refundAddresses);
@@ -42,6 +45,8 @@ contract Staking is IStaking, Ownable {
             if (hasStaked[slashAddress]) {
                 hasStaked[slashAddress] = false;
                 payable(owner()).transfer(STAKING_AMOUNT);
+            } else {
+                revert("Staking: slash-address must have staked");
             }
         }
         emit StakesSlashed(_slashAddresses);
