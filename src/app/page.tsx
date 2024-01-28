@@ -169,7 +169,7 @@ export default function Home() {
                         )
                       })()}
                     </Flex>
-                    <StakeButton stakerAddress={account!.address as "0x${string}"}/>
+                    <StakeButton stakerAddress={account!.address as "0x${string}"} />
                   </>
                 )
               }}
@@ -182,12 +182,13 @@ export default function Home() {
 }
 
 type StakeButtonElement = React.ElementRef<typeof Button>
+
 interface StakeButtonProps extends ButtonProps {
   stakerAddress: "0x${string}"
 }
 
 const StakeButton = React.forwardRef<StakeButtonElement, StakeButtonProps>((props, forwardRef) => {
-  const {stakerAddress, ...buttonProps} = props
+  const { stakerAddress, ...buttonProps } = props
 
   const { config: writeConfig, error: prepareError, isError: prepareIsError } = usePrepareContractWrite({
     address: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS! as "0x${string}",
