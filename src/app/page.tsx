@@ -190,6 +190,13 @@ interface StakeButtonProps extends ButtonProps {
 const StakeButton = React.forwardRef<StakeButtonElement, StakeButtonProps>((props, forwardRef) => {
   const { stakerAddress, ...buttonProps } = props
 
+  const { config: writeConfig, error: prepareError, isError: prepareIsError } = usePrepareContractWrite({
+    address: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS! as "0x${string}",
+    abi: abi,
+    functionName: "stake",
+    value: parseEther(process.env.NEXT_PUBLIC_STAKE_AMOUNT!),
+  })
+
   const {
     data: hash,
     isLoading: writeIsLoading,
@@ -197,12 +204,7 @@ const StakeButton = React.forwardRef<StakeButtonElement, StakeButtonProps>((prop
     isSuccess: writeIsSuccess,
     error: writeError,
     write
-  } = useContractWrite({
-    address: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS! as "0x${string}",
-    abi: abi,
-    functionName: "stake",
-    value: parseEther(process.env.NEXT_PUBLIC_STAKE_AMOUNT!),
-  })
+  } = useContractWrite(writeConfig)
 
   const {
     isLoading: confirmIsLoading,
@@ -308,6 +310,7 @@ const StakeButton = React.forwardRef<StakeButtonElement, StakeButtonProps>((prop
               }
 
               <Button
+                {...buttonProps}
                 isDisabled={confirmIsSuccess || hasStaked}
                 isLoading={transactionIsLoading}
                 loadingText={"Staking"}
