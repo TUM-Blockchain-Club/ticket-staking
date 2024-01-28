@@ -1,26 +1,37 @@
 "use client"
-import { Button, Center, Container, Flex, Heading, Image, Text } from "@chakra-ui/react"
+import { Button, Link, Code, Container, Flex, Heading, Image, Text } from "@chakra-ui/react"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { signIn, signOut, useSession } from "next-auth/react"
-import { useSendTransaction } from "wagmi"
+import { useContractWrite, usePrepareContractWrite, useWaitForTransaction } from "wagmi"
+import abi from "@/app/abi"
 import { parseEther } from "viem"
-import useSWR from "swr"
-
-interface StakeData {
-  address: string;
-  amount: string;
-}
 
 export default function Home() {
   const { data: session } = useSession()
-  const { data: hash, isLoading, isSuccess, isError, error, sendTransaction } = useSendTransaction()
 
-  async function fetchStakeData(address: string): Promise<StakeData> {
-    return fetch(address).then((data) => data.json())
-  }
+  const { config, error: prepareError, isError: prepareIsError } = usePrepareContractWrite({
+    address: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS! as "0x${string}",
+    abi: abi,
+    functionName: "stake",
+    value: parseEther(process.env.NEXT_PUBLIC_STAKE_AMOUNT!)
+  })
 
+  const {
+    data: hash,
+    isLoading: writeIsLoading,
+    isError: writeIsError,
+    isSuccess: writeIsSuccess,
+    error: writeError,
+    write
+  } = useContractWrite(config)
 
-  const { data: stakeData, error: dataError, isLoading: dataIsLoading } = useSWR("/api/stake-data", fetchStakeData)
+  const {
+    isLoading: confirmIsLoading,
+    isError: confirmIsError,
+    isSuccess: confirmIsSuccess,
+    isIdle,
+    error: confirmError
+  } = useWaitForTransaction(hash)
 
   return (
     <main>
@@ -158,27 +169,14 @@ export default function Home() {
                             onClick={openChainModal}
                             sx={{ display: "flex", alignItems: "center" }}
                             type="button"
+                            leftIcon={chain.hasIcon && chain.iconUrl ? (
+                              <Image
+                                alt={chain.name ?? "Chain icon"}
+                                src={chain.iconUrl}
+                                style={{ width: 12, height: 12 }}
+                              />
+                            ) : <></>}
                           >
-                            {chain.hasIcon && (
-                              <div
-                                style={{
-                                  background: chain.iconBackground,
-                                  width: 12,
-                                  height: 12,
-                                  borderRadius: 999,
-                                  overflow: "hidden",
-                                  marginRight: 4
-                                }}
-                              >
-                                {chain.iconUrl && (
-                                  <Image
-                                    alt={chain.name ?? "Chain icon"}
-                                    src={chain.iconUrl}
-                                    style={{ width: 12, height: 12 }}
-                                  />
-                                )}
-                              </div>
-                            )}
                             {chain.name}
                           </Button>
 
@@ -204,13 +202,15 @@ export default function Home() {
                   authenticationStatus,
                   mounted
                 }) => {
-                const ready = mounted && authenticationStatus !== "loading" && !dataIsLoading
+                const ready = mounted && authenticationStatus !== "loading"
                 const connected =
                   ready &&
                   account &&
                   chain &&
                   (!authenticationStatus ||
                     authenticationStatus === "authenticated")
+                const transactionIsLoading = writeIsLoading || writeIsSuccess || confirmIsLoading || confirmIsSuccess
+                const alreadyStaking = prepareIsError && prepareError?.message?.includes("Staking: already staked")
 
                 if (connected) {
                   return (
@@ -228,7 +228,11 @@ export default function Home() {
                     >
                       <Flex gap={2}>
                         {(() => {
-                          if (connected && !isLoading && isSuccess) {
+                          if (
+                            // The staking is success
+                            (connected && !confirmIsLoading && confirmIsSuccess)
+                            || alreadyStaking
+                          ) {
                             return <>✅</>
                           }
                           return <></>
@@ -237,23 +241,53 @@ export default function Home() {
                           Step 3. Stake
                         </Heading>
                       </Flex>
-                      {isLoading && <Text size={"md"} color={"orange"}>Check your wallet for confirmation</Text>}
-                      {!isLoading && isSuccess && <Text size={"md"} color={"green"}>Successfully staked</Text>}
-                      {!isLoading && isError && <Text size={"md"} color={"red"}>Failed to stake with message {error?.message}</Text>}
-                      {!dataIsLoading && !dataError && <Button
-                        disabled={isLoading && isSuccess}
-                        onClick={(event) => {
-                          console.log(`Sending ${stakeData!.amount} ETH to ${stakeData!.address}`)
 
-                          sendTransaction({
-                            to: stakeData!.address,
-                            value: parseEther(stakeData!.amount)
-                          })
+                      {writeIsLoading &&
+                        <Text size={"md"} color={"orange"}>Check your wallet for confirmation</Text>
+                      }
+
+                      {!writeIsLoading && writeIsSuccess &&
+                        <Text size={"md"} color={"green"}>Successfully invoked the contract
+                          { hash?.hash &&
+                            <>
+                            (TX ID:
+                              <Link href={`https://${process.env.NEXT_PUBLIC_ETHERSCAN_DOMAIN}/tx/${hash.hash}`}>
+                                <Code colorScheme={"green"}>{`${hash.hash}`}</Code>
+                              </Link>)
+                            </>
+                          }
+                        </Text>
+                      }
+
+                      {!writeIsLoading && writeIsError &&
+                        <Text size={"md"} color={"red"}>Failed to stake with message {writeError?.message}</Text>
+                      }
+
+                      {!writeIsLoading && !writeIsError && confirmIsLoading &&
+                        <Text size={"md"}>Confirming transaction in chain</Text>
+                      }
+
+                      {((!writeIsLoading && !writeIsError && confirmIsSuccess) || alreadyStaking) &&
+                        <Text size={"md"} color={"green"}>Successfully confirmed staking, see you in the event!</Text>
+                      }
+
+                      {!writeIsLoading && !writeIsError && confirmIsError &&
+                        <Text size={"md"} color={"red"}>Failed to stake with message {confirmError?.message}</Text>
+                      }
+
+                      <Button
+                        isDisabled={confirmIsSuccess || alreadyStaking}
+                        isLoading={transactionIsLoading}
+                        loadingText={"Staking"}
+                        onClick={(event) => {
+                          if (write) {
+                            console.log("Performing staking")
+                            write()
+                          }
                         }}
                       >
-                        Stake {process.env!.STAKE_AMOUNT!} now
-                      </Button>}
-                      {dataError && <Text size={"md"} color={"red"}>There is error in fetching stake data</Text>}
+                        Stake now
+                      </Button>
                     </Flex>
                   )
                 }

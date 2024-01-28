@@ -1,5 +1,4 @@
 "use client"
-
 import React from "react"
 import { getDefaultWallets, RainbowKitProvider } from "@rainbow-me/rainbowkit"
 import { configureChains, createConfig, WagmiConfig } from "wagmi"
@@ -13,7 +12,7 @@ import { RainbowKitSiweNextAuthProvider } from "@rainbow-me/rainbowkit-siwe-next
 export function Providers({ children }: { children: React.ReactNode }) {
   const { chains, publicClient } = configureChains(
     [sepolia],
-    [alchemyProvider({ apiKey: process.env.ALCHEMY_ID! }), publicProvider()],
+    [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_ID! }), publicProvider()],
   )
 
   const { connectors } = getDefaultWallets({
