@@ -80,6 +80,7 @@ export default function Home() {
                 )
               })()}
             </Flex>
+
             {session && <ConnectButton.Custom>
               {({
                   account,
@@ -98,80 +99,83 @@ export default function Home() {
                   (!authenticationStatus ||
                     authenticationStatus === "authenticated")
 
-                return (
-                  <>
-                    <Flex
-                      flexDirection={"column"}
-                      justifyContent={"center"}
-                      alignItems={"center"}
-                      gap={2}
-                      aria-hidden={!ready}
-                      sx={!ready ? {
-                        opacity: 0,
-                        pointerEvents: "none",
-                        userSelect: "none"
-                      } : {}}
-                    >
-                      <Flex gap={2}>
+                if (connected) {
+                  return (
+                    <>
+                      <Flex
+                        flexDirection={"column"}
+                        justifyContent={"center"}
+                        alignItems={"center"}
+                        gap={2}
+                        aria-hidden={!ready}
+                        sx={!ready ? {
+                          opacity: 0,
+                          pointerEvents: "none",
+                          userSelect: "none"
+                        } : {}}
+                      >
+                        <Flex gap={2}>
+                          {(() => {
+                            if (connected && !chain.unsupported) {
+                              return <>✅</>
+                            }
+                            return <></>
+                          })()}
+                          <Heading as={"h3"} size={"md"}>
+                            Step 2. Connect your Wallet
+                          </Heading>
+                        </Flex>
                         {(() => {
-                          if (connected && !chain.unsupported) {
-                            return <>✅</>
-                          }
-                          return <></>
-                        })()}
-                        <Heading as={"h3"} size={"md"}>
-                          Step 2. Connect your Wallet
-                        </Heading>
-                      </Flex>
-                      {(() => {
-                        if (!connected) {
-                          return (
-                            <Button onClick={openConnectModal} type="button">
-                              Log In Using Wallet
-                            </Button>
-                          )
-                        }
-
-                        if (chain.unsupported) {
-                          return (
-                            <>
-                              <Text size={"md"}>{chain.name} is currently not supported, we only support Sepolia.</Text>
-                              <Button onClick={openChainModal} type="button">
-                                Change Network
+                          if (!connected) {
+                            return (
+                              <Button onClick={openConnectModal} type="button">
+                                Log In Using Wallet
                               </Button>
-                            </>
+                            )
+                          }
+
+                          if (chain.unsupported) {
+                            return (
+                              <>
+                                <Text size={"md"}>{chain.name} is currently not supported, we only support Sepolia.</Text>
+                                <Button onClick={openChainModal} type="button">
+                                  Change Network
+                                </Button>
+                              </>
+                            )
+                          }
+
+                          return (
+                            <Flex gap={2}>
+                              <Button
+                                onClick={openChainModal}
+                                sx={{ display: "flex", alignItems: "center" }}
+                                type="button"
+                                leftIcon={chain.hasIcon && chain.iconUrl ? (
+                                  <Image
+                                    alt={chain.name ?? "Chain icon"}
+                                    src={chain.iconUrl}
+                                    style={{ width: 12, height: 12 }}
+                                  />
+                                ) : <></>}
+                              >
+                                {chain.name}
+                              </Button>
+
+                              <Button onClick={openAccountModal} type="button">
+                                {account.displayName} {account.displayBalance
+                                ? ` (${account.displayBalance})`
+                                : ""}
+                              </Button>
+                            </Flex>
                           )
-                        }
-
-                        return (
-                          <Flex gap={2}>
-                            <Button
-                              onClick={openChainModal}
-                              sx={{ display: "flex", alignItems: "center" }}
-                              type="button"
-                              leftIcon={chain.hasIcon && chain.iconUrl ? (
-                                <Image
-                                  alt={chain.name ?? "Chain icon"}
-                                  src={chain.iconUrl}
-                                  style={{ width: 12, height: 12 }}
-                                />
-                              ) : <></>}
-                            >
-                              {chain.name}
-                            </Button>
-
-                            <Button onClick={openAccountModal} type="button">
-                              {account.displayName} {account.displayBalance
-                              ? ` (${account.displayBalance})`
-                              : ""}
-                            </Button>
-                          </Flex>
-                        )
-                      })()}
-                    </Flex>
-                    <StakeButton stakerAddress={account!.address as "0x${string}"} />
-                  </>
-                )
+                        })()}
+                      </Flex>
+                      <StakeButton stakerAddress={account!.address as "0x${string}"} />
+                    </>
+                  )
+                }
+                return <></>
               }}
             </ConnectButton.Custom>}
           </Flex>
